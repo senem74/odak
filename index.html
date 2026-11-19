@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>SKB Akademi · Odak Laboratuvarı</title>
+<style>
+  :root { --g:#23860F; --gold:#A8832F; --ink:#1F2420; --mut:#5E665F; --bg:#F5F3EE; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  .w { max-width:520px; margin:0 auto; padding:72px 20px; text-align:center; }
+  .k { letter-spacing:.32em; color:var(--gold); font-weight:700; font-size:13px; }
+  h1 { margin:8px 0 0; font-size:30px; letter-spacing:.02em; }
+  h1 span { color:var(--g); }
+  .sp { width:34px; height:34px; margin:36px auto 14px; border:3px solid #D9E6D3; border-top-color:var(--g); border-radius:50%; animation:r .9s linear infinite; }
+  @keyframes r { to { transform:rotate(360deg); } }
+  h2 { font-size:19px; margin:34px 0 8px; }
+  p { color:var(--mut); line-height:1.55; font-size:15px; margin:6px 0; }
+  button { margin-top:18px; background:var(--g); color:#fff; border:0; border-radius:10px; padding:12px 22px; font-size:15px; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="w" id="w">
+  <div class="k">SKB AKADEMİ</div>
+  <h1>ODAK <span>LABORATUVARI</span></h1>
+  <div class="sp" id="sp"></div>
+  <p id="st">Uygulama hazırlanıyor…</p>
+</div>
+<script>
+(function () {
+  var API = 'https://script.google.com/macros/s/AKfycbzMxoZkY6h9IPHUGw-VaYv2k1Hs3JrWboiuSobwVjJXizJcjswSAXSkc55NeAaZRWMr3Q/exec';
+  var k = '';
+  try { k = (new URLSearchParams(location.search).get('k') || '').trim(); } catch (e) {}
+  var CK = 'skb_odak_kopya_' + k;
+
+  function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function mesaj(t, m, tekrar) {
+    var sp = document.getElementById('sp'); if (sp) sp.remove();
+    var st = document.getElementById('st'); if (st) st.remove();
+    var w = document.getElementById('w');
+    w.insertAdjacentHTML('beforeend', '<h2>' + esc(t) + '</h2><p>' + esc(m) + '</p>' + (tekrar ? '<button onclick="location.reload()">Tekrar dene</button>' : ''));
+  }
+  function ac(html) {
+    document.open(); document.write(html); document.close();
+  }
+
+  if (!/^[a-f0-9]{14}$/.test(k)) {
+    mesaj('Kişisel link gerekli', 'Odak Laboratuvarı\'nı açmak için SKB Akademi\'den aldığınız kişisel linkin tamamını kullanın.');
+    return;
+  }
+
+  var yavas = setTimeout(function () {
+    var st = document.getElementById('st'); if (st) st.textContent = 'Biraz uzun sürüyor, lütfen bekleyin…';
+  }, 6000);
+
+  function getir(deneme) {
+    return fetch(API + '?api=1&k=' + encodeURIComponent(k), { credentials: 'omit', cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .catch(function (e) { if (deneme < 2) return new Promise(function (res) { setTimeout(res, 1500); }).then(function () { return getir(deneme + 1); }); throw e; });
+  }
+
+  getir(0).then(function (d) {
+    clearTimeout(yavas);
+    if (!d || !d.ok) {
+      try { localStorage.removeItem(CK); } catch (e) {}
+      mesaj((d && d.t) || 'Link geçersiz', (d && d.m) || 'Güncel linki lisansı aldığınız kişiden isteyin.');
+      return;
+    }
+    try { localStorage.setItem(CK, d.html); } catch (e) {}
+    ac(d.html);
+  }).catch(function () {
+    clearTimeout(yavas);
+    var c = null;
+    try { c = localStorage.getItem(CK); } catch (e) {}
+    if (c) { ac(c); return; }
+    mesaj('Bağlantı kurulamadı', 'İnternet bağlantınızı kontrol edip tekrar deneyin.', true);
+  });
+})();
+</script>
+</body>
+</html>
